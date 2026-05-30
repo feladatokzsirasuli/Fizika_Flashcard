@@ -129,7 +129,7 @@
 
     <script>
         // =========================================================================
-        // IDE CSAK A TÁBLÁZATOD ID-JÁT MÁSOLD BE! (Pl. a te rövidebb linkedből)
+        // IDE CSAK A TÁBLÁZATOD ID-JÁT MÁSOLD BE!
         // =========================================================================
         const SPREADSHEET_ID = "1iQQqxL80W2ykjBvqTexcEEqOUMU8PZsdhl_nrGfLnEU";
         // =========================================================================
@@ -144,7 +144,6 @@
         const urlParams = new URLSearchParams(window.location.search);
         const gidNumber = urlParams.get('gid') || "0"; 
 
-        // Biztos, univerzális Google Drive letöltési formátum
         const csvUrl = `https://google.com{SPREADSHEET_ID}/gviz/tq?tqx=out:csv&gid=${gidNumber}`;
 
         async function loadCardsFromSheets() {
@@ -172,12 +171,14 @@
             const lines = text.split(/\r?\n/);
             flashcards = [];
             
-            for (let line of lines) {
+            // Az első sort (index 0) kihagyjuk, mert az a Google által generált fejléc!
+            for (let i = 1; i < lines.length; i++) {
+                let line = lines[i];
                 if (!line.trim()) continue;
                 
                 const parts = line.split(',');
                 if (parts.length >= 2) {
-                    // Tisztítjuk az idézőjelektől a szöveget
+                    // Kijavítva: Pontos indexelés az elemek takarításához
                     let q = parts[0].replace(/^"|"$/g, '').trim();
                     let a = parts[1].replace(/^"|"$/g, '').trim();
                     if (q && a) {
