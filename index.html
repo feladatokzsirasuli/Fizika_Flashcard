@@ -129,9 +129,9 @@
 
     <script>
         // =========================================================================
-        // IDE MÁSOLD BE A TELJES GOOGLE LINKET (AMIT A BÖNGÉSZŐBŐL VAGY MEGOSZTÁSBÓL KAPTÁL!)
+        // IDE CSAK A TÁBLÁZATOD ID-JÁT MÁSOLD BE! (Pl. a te rövidebb linkedből)
         // =========================================================================
-        const SPREADSHEET_URL = "https://docs.google.com/spreadsheets/d/1iQQqxL80W2ykjBvqTexcEEqOUMU8PZsdhl_nrGfLnEU/edit?usp=sharing";
+        const SPREADSHEET_ID = "1iQQqxL80W2ykjBvqTexcEEqOUMU8PZsdhl_nrGfLnEU";
         // =========================================================================
 
         let flashcards = [];
@@ -144,26 +144,10 @@
         const urlParams = new URLSearchParams(window.location.search);
         const gidNumber = urlParams.get('gid') || "0"; 
 
-        // Intelligens link-értelmező (Kiszűri az ID-t, akár e/ típusú, akár sima megosztásos linket adsz meg)
-        function buildCsvUrl() {
-            let id = "";
-            if (SPREADSHEET_URL.includes("/d/e/")) {
-                id = SPREADSHEET_URL.split("/d/e/")[1].split("/")[0];
-                return `https://google.com{id}/pub?gid=${gidNumber}&single=true&output=csv`;
-            } else if (SPREADSHEET_URL.includes("/d/")) {
-                id = SPREADSHEET_URL.split("/d/")[1].split("/")[0];
-                return `https://google.com{id}/gviz/tq?tqx=out:csv&gid=${gidNumber}`;
-            }
-            return "";
-        }
+        // Biztos, univerzális Google Drive letöltési formátum
+        const csvUrl = `https://google.com{SPREADSHEET_ID}/gviz/tq?tqx=out:csv&gid=${gidNumber}`;
 
         async function loadCardsFromSheets() {
-            const csvUrl = buildCsvUrl();
-            if (!csvUrl) {
-                statusMessage.textContent = "Hiba: Érvénytelen Google Táblázat URL lett megadva!";
-                return;
-            }
-
             try {
                 const response = await fetch(csvUrl);
                 if (!response.ok) throw new Error("Sikertelen letöltés.");
@@ -172,14 +156,14 @@
                 parseCSV(data);
 
                 if (flashcards.length === 0) {
-                    statusMessage.textContent = "Hiba: Nem találhatók kérdések ezen a lapon! Ellenőrizd a táblázat megosztási beállításait (Bárki, aki rendelkezik a linkkel -> Néző)!";
+                    statusMessage.textContent = "Hiba: Nem találhatók kérdések ezen a lapon!";
                 } else {
                     statusMessage.style.display = 'none';
                     gameContainer.style.display = 'flex';
                     nextRandomCard();
                 }
             } catch (error) {
-                statusMessage.textContent = "Hiba történt az adatok letöltése közben. Kérlek győződj meg róla, hogy a táblázat általános megosztása át van állítva 'Bárki, aki rendelkezik a linkkel'-re!";
+                statusMessage.textContent = "Hiba történt az adatok letöltése közben. Kérlek ellenőrizd a táblázatot!";
                 console.error(error);
             }
         }
@@ -191,9 +175,9 @@
             for (let line of lines) {
                 if (!line.trim()) continue;
                 
-                // Tisztességes, mindenféle idézőjelet lefejtő CSV bontás
                 const parts = line.split(',');
                 if (parts.length >= 2) {
+                    // Tisztítjuk az idézőjelektől a szöveget
                     let q = parts[0].replace(/^"|"$/g, '').trim();
                     let a = parts[1].replace(/^"|"$/g, '').trim();
                     if (q && a) {
