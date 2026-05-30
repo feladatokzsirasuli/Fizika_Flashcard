@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Modern Dinamikus Tanulókártyák</title>
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --card-bg-front: #1e293b;
+            --card-bg-back: #2563eb;
+            --text-main: #f8fafc;
+            --text-sub: #94a3b8;
+            --btn-neutral: #334155;
+            --btn-neutral-hover: #475569;
+            --btn-orange: #f97316;
+            --btn-orange-hover: #ea580c;
+        }
+
+        body {
+            font-family: 'Segoe UI', Roboto, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+            max-width: 500px;
+        }
+
+        .card-container {
+            width: 100%;
+            height: 320px;
+            perspective: 1200px;
+            cursor: pointer;
+            margin-bottom: 25px;
+        }
+
+        .card {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            transform-style: preserve-3d;
+            transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            border-radius: 20px;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3);
+        }
+
+        .card.flipped { transform: rotateY(180deg); }
+
+        .card-face {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 30px;
+            box-sizing: border-box;
+            border-radius: 20px;
+            text-align: center;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .card-front { background-color: var(--card-bg-front); color: var(--text-main); }
+        .card-back { background-color: var(--card-bg-back); color: #ffffff; transform: rotateY(180deg); }
+
+        .card-text { 
+            font-size: 1.6rem;
+            font-weight: 600; 
+            line-height: 1.5; 
+            margin: 0; 
+        }
+
+        button {
+            padding: 15px 24px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: white;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            width: 100%;
+            margin-bottom: 15px;
+        }
+
+        button:active { transform: scale(0.98); }
+        .btn-nav { background-color: var(--btn-neutral); }
+        .btn-nav:hover { background-color: var(--btn-neutral-hover); }
+        
+        .btn-stop { background-color: var(--btn-orange); }
+        .btn-stop:hover { background-color: var(--btn-orange-hover); }
+
+        #status-message {
+            font-size: 1.4rem;
+            font-weight: 600;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container" id="game-container" style="display: none;">
+        <!-- Tanulókártya -->
+        <div class="card-container" onclick="flipCard()">
+            <div class="card" id="card">
+                <div class="card-face card-front"><p class="card-text" id="question"></p></div>
+                <div class="card-face card-back"><p class="card-text" id="answer"></p></div>
+            </div>
+        </div>
+        
+        <!-- Irányító gombok -->
+        <button class="btn-nav" onclick="nextRandomCard(event)">Következő kártya ▶</button>
+        <button class="btn-stop" onclick="stopGame(event)">Stop (Leállítás)</button>
+    </div>
+
+    <!-- Állapotjelző és záró üzenet -->
+    <div id="status-message">Kérdések betöltése a Google Drive-ból...</div>
+
+    <script>
+        // =========================================================================
+        // KULCS BEÁLLÍTÁS: Ide másold be a Google Táblázatod egyedi azonosítóját (ID)!
+        // =========================================================================
+        const SPREADSHEET_ID = "e/2PACX-1vRlEolftRvI5oKIl9skwv4WfNTu6emh5xxrQbf02mzdzFbZblbe7tY27Y2XluD69sQkLGWESkHjquTi";
+        // =========================================================================
+
+        let flashcards = [];
+        const cardElement = document.getElementById('card');
+        const questionElement = document.getElementById('question');
+        const answerElement = document.getElementById('answer');
+        const gameContainer = document.getElementById('game-container');
+        const statusMessage = document.getElementById('status-message');
+
+        // URL paraméter kiolvasása (meghatározza, melyik fület töltsük be)
+        const urlParams = new URLSearchParams(window.location.search);
+        // Ha nincs megadva paraméter, alapértelmezetten a "Sebesség" nevű fület keresi
+        const sheetName = urlParams.get('sheet') || "Sebesség";
+
+        // Adatok letöltése a Google Sheets-ből CSV formátumban
+        const csvUrl = `https://google.com{SPREADSHEET_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(sheetName)}`;
+
+        async function loadCardsFromSheets() {
+            try {
+                const response = await fetch(csvUrl);
+                if (!response.ok) throw new Error("Nem sikerült elérni a táblázatot.");
+                
+                const data = await response.text();
+                parseCSV(data);
+
+                if (flashcards.length === 0) {
+                    statusMessage.textContent = `Hiba: Nem találhatók kérdések a(z) "${sheetName}" nevű munkalapon!`;
+                } else {
+                    statusMessage.style.display = 'none';
+                    gameContainer.style.display = 'flex';
+                    nextRandomCard();
+                }
+            } catch (error) {
+                statusMessage.textContent = "Hiba történt az adatok letöltése közben. Ellenőrizd a táblázat ID-t és a közzétételt!";
+                console.error(error);
+            }
+        }
+
+        // CSV szöveg feldolgozása kártyákká
+        function parseCSV(text) {
+            const lines = text.split(/\r?\n/);
+            flashcards = [];
+            
+            for (let line of lines) {
+                if (!line.trim()) continue;
+                
+                // Egyszerű CSV sorbontás (időzőjelek kezelésével)
+                const matches = line.match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g) || line.split(',');
+                if (matches.length >= 2) {
+                    let q = matches[0].replace(/^"|"$/g, '').trim();
+                    let a = matches[1].replace(/^"|"$/g, '').trim();
+                    if (q && a) {
+                        flashcards.push({ question: q, answer: a });
+                    }
+                }
+            }
+        }
+
+        function nextRandomCard(event) {
+            if(event) event.stopPropagation();
+            cardElement.classList.remove('flipped');
+            
+            setTimeout(() => {
+                const randomIndex = Math.floor(Math.random() * flashcards.length);
+                questionElement.textContent = flashcards[randomIndex].question;
+                answerElement.textContent = flashcards[randomIndex].answer;
+            }, 150);
+        }
+
+        function flipCard() {
+            cardElement.classList.toggle('flipped');
+        }
+
+        function stopGame(event) {
+            if(event) event.stopPropagation();
+            gameContainer.style.display = 'none';
+            statusMessage.textContent = "A gyakorlás véget ért! Szép munka! 😊";
+            statusMessage.style.display = 'block';
+        }
+
+        // Indítás
+        loadCardsFromSheets();
+    </script>
+</body>
+</html>
