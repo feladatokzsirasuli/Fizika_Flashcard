@@ -1,3 +1,4 @@
+<!DOCTYPE html>
 <html lang="hu">
 <head>
     <meta charset="UTF-8">
@@ -127,11 +128,7 @@
     <div id="status-message">Kérdések betöltése...</div>
 
     <script>
-        // =========================================================================
-        // IDE ILLESZD BE A JAVÍTOTT, e/ NÉLKÜLI 2PACX... KÓDOT!
-        // =========================================================================
         const SPREADSHEET_ID = "2PACX-1vRlEolftRvI5oKIl9skwv4WfNTu6emh5xxrQbf02mzdzFbZblbe7tY27Y2XluD69sQkLGWESkHjquTi";
-        // =========================================================================
 
         let flashcards = [];
         const cardElement = document.getElementById('card');
@@ -140,12 +137,12 @@
         const gameContainer = document.getElementById('game-container');
         const statusMessage = document.getElementById('status-message');
 
+        // Most már a gid számot olvassuk ki a link végéről!
         const urlParams = new URLSearchParams(window.location.search);
-        // Ha nem írsz be semmit a link végére, alapértelmezetten a "Sebesség" nevű munkalapot keresi
-        const sheetName = urlParams.get('sheet') || "Sebesség";
+        const gidNumber = urlParams.get('gid') || "0"; // Ha nincs megadva, az első fület (0) tölti be
 
-        // Webes közzétételre optimalizált CSV letöltési link formátum
-        const csvUrl = `https://google.com{SPREADSHEET_ID}/pub?output=csv&sheet=${encodeURIComponent(sheetName)}`;
+        // Biztos működést nyújtó Google link struktúra számmal
+        const csvUrl = `https://google.com{SPREADSHEET_ID}/pub?gid=${gidNumber}&single=true&output=csv`;
 
         async function loadCardsFromSheets() {
             try {
@@ -156,14 +153,14 @@
                 parseCSV(data);
 
                 if (flashcards.length === 0) {
-                    statusMessage.textContent = `Hiba: Nem található adat a(z) "${sheetName}" munkalapon!`;
+                    statusMessage.textContent = "Hiba: Nem találhatók kérdések ezen a lapon!";
                 } else {
                     statusMessage.style.display = 'none';
                     gameContainer.style.display = 'flex';
                     nextRandomCard();
                 }
             } catch (error) {
-                statusMessage.textContent = "Hiba történt az adatok letöltése közben. Ellenőrizd a táblázat közzétételét!";
+                statusMessage.textContent = "Hiba történt az adatok letöltése közben. Kérlek ellenőrizd a táblázatot!";
                 console.error(error);
             }
         }
@@ -175,7 +172,6 @@
             for (let line of lines) {
                 if (!line.trim()) continue;
                 
-                // Trükkös CSV sorbontás, ami kezeli az idézőjeleket és vesszőket a szövegen belül
                 const matches = line.match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g) || line.split(',');
                 if (matches.length >= 2) {
                     let q = matches[0].replace(/^"|"$/g, '').trim();
