@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+!DOCTYPE html>
 <html lang="hu">
 <head>
     <meta charset="UTF-8">
@@ -137,11 +137,9 @@
         const gameContainer = document.getElementById('game-container');
         const statusMessage = document.getElementById('status-message');
 
-        // Most már a gid számot olvassuk ki a link végéről!
         const urlParams = new URLSearchParams(window.location.search);
-        const gidNumber = urlParams.get('gid') || "0"; // Ha nincs megadva, az első fület (0) tölti be
+        const gidNumber = urlParams.get('gid') || "0"; 
 
-        // Biztos működést nyújtó Google link struktúra számmal
         const csvUrl = `https://google.com{SPREADSHEET_ID}/pub?gid=${gidNumber}&single=true&output=csv`;
 
         async function loadCardsFromSheets() {
@@ -172,10 +170,11 @@
             for (let line of lines) {
                 if (!line.trim()) continue;
                 
-                const matches = line.match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g) || line.split(',');
-                if (matches.length >= 2) {
-                    let q = matches[0].replace(/^"|"$/g, '').trim();
-                    let a = matches[1].replace(/^"|"$/g, '').trim();
+                // Egyszerűsített, stabil sorbontás a vesszők mentén
+                const parts = line.split(',');
+                if (parts.length >= 2) {
+                    let q = parts[0].replace(/^"|"$/g, '').trim();
+                    let a = parts[1].replace(/^"|"$/g, '').trim();
                     if (q && a) {
                         flashcards.push({ question: q, answer: a });
                     }
