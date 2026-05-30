@@ -1,4 +1,3 @@
-<!DOCTYPE html>
 <html lang="hu">
 <head>
     <meta charset="UTF-8">
@@ -114,7 +113,6 @@
 <body>
 
     <div class="container" id="game-container" style="display: none;">
-        <!-- Tanulókártya -->
         <div class="card-container" onclick="flipCard()">
             <div class="card" id="card">
                 <div class="card-face card-front"><p class="card-text" id="question"></p></div>
@@ -122,19 +120,17 @@
             </div>
         </div>
         
-        <!-- Irányító gombok -->
         <button class="btn-nav" onclick="nextRandomCard(event)">Következő kártya ▶</button>
         <button class="btn-stop" onclick="stopGame(event)">Stop (Leállítás)</button>
     </div>
 
-    <!-- Állapotjelző és záró üzenet -->
-    <div id="status-message">Kérdések betöltése a Google Drive-ból...</div>
+    <div id="status-message">Kérdések betöltése...</div>
 
     <script>
         // =========================================================================
-        // KULCS BEÁLLÍTÁS: Ide másold be a Google Táblázatod egyedi azonosítóját (ID)!
+        // IDE ILLESZD BE A JAVÍTOTT, e/ NÉLKÜLI 2PACX... KÓDOT!
         // =========================================================================
-        const SPREADSHEET_ID = "e/2PACX-1vRlEolftRvI5oKIl9skwv4WfNTu6emh5xxrQbf02mzdzFbZblbe7tY27Y2XluD69sQkLGWESkHjquTi";
+        const SPREADSHEET_ID = "2PACX-1vRlEolftRvI5oKIl9skwv4WfNTu6emh5xxrQbf02mzdzFbZblbe7tY27Y2XluD69sQkLGWESkHjquTi";
         // =========================================================================
 
         let flashcards = [];
@@ -144,36 +140,34 @@
         const gameContainer = document.getElementById('game-container');
         const statusMessage = document.getElementById('status-message');
 
-        // URL paraméter kiolvasása (meghatározza, melyik fület töltsük be)
         const urlParams = new URLSearchParams(window.location.search);
-        // Ha nincs megadva paraméter, alapértelmezetten a "Sebesség" nevű fület keresi
+        // Ha nem írsz be semmit a link végére, alapértelmezetten a "Sebesség" nevű munkalapot keresi
         const sheetName = urlParams.get('sheet') || "Sebesség";
 
-        // Adatok letöltése a Google Sheets-ből CSV formátumban
-        const csvUrl = `https://google.com{SPREADSHEET_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(sheetName)}`;
+        // Webes közzétételre optimalizált CSV letöltési link formátum
+        const csvUrl = `https://google.com{SPREADSHEET_ID}/pub?output=csv&sheet=${encodeURIComponent(sheetName)}`;
 
         async function loadCardsFromSheets() {
             try {
                 const response = await fetch(csvUrl);
-                if (!response.ok) throw new Error("Nem sikerült elérni a táblázatot.");
+                if (!response.ok) throw new Error("Sikertelen letöltés.");
                 
                 const data = await response.text();
                 parseCSV(data);
 
                 if (flashcards.length === 0) {
-                    statusMessage.textContent = `Hiba: Nem találhatók kérdések a(z) "${sheetName}" nevű munkalapon!`;
+                    statusMessage.textContent = `Hiba: Nem található adat a(z) "${sheetName}" munkalapon!`;
                 } else {
                     statusMessage.style.display = 'none';
                     gameContainer.style.display = 'flex';
                     nextRandomCard();
                 }
             } catch (error) {
-                statusMessage.textContent = "Hiba történt az adatok letöltése közben. Ellenőrizd a táblázat ID-t és a közzétételt!";
+                statusMessage.textContent = "Hiba történt az adatok letöltése közben. Ellenőrizd a táblázat közzétételét!";
                 console.error(error);
             }
         }
 
-        // CSV szöveg feldolgozása kártyákká
         function parseCSV(text) {
             const lines = text.split(/\r?\n/);
             flashcards = [];
@@ -181,7 +175,7 @@
             for (let line of lines) {
                 if (!line.trim()) continue;
                 
-                // Egyszerű CSV sorbontás (időzőjelek kezelésével)
+                // Trükkös CSV sorbontás, ami kezeli az idézőjeleket és vesszőket a szövegen belül
                 const matches = line.match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g) || line.split(',');
                 if (matches.length >= 2) {
                     let q = matches[0].replace(/^"|"$/g, '').trim();
@@ -215,7 +209,6 @@
             statusMessage.style.display = 'block';
         }
 
-        // Indítás
         loadCardsFromSheets();
     </script>
 </body>
